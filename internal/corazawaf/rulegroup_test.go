@@ -12,47 +12,79 @@ import (
 func newTestRule(id int) *Rule {
 	r := NewRule()
 	r.ID_ = id
-	r.Msg, _ = macro.NewMacro("test")
+	r.Msg, _ = macro.NewMacro("test-Msg")
 	r.Tags_ = []string{
-		"test",
+		"Test-Tag",
 	}
 	return r
 }
 
 func TestRuleGroupDeleteByTag(t *testing.T) {
-	r := newTestRule(1)
+	t.Run("matches exact case", func(t *testing.T) {
+		rg := NewRuleGroup()
+		if err := rg.Add(newTestRule(1)); err != nil {
+			t.Fatal("Failed to add rule to rulegroup")
+		}
+		rg.DeleteByTag("Test-Tag")
+		if rg.Count() != 0 {
+			t.Error("Expected rule to be removed")
+		}
+	})
 
-	rg := NewRuleGroup()
-	if err := rg.Add(r); err != nil {
-		t.Error("Failed to add rule to rulegroup")
-	}
-
-	if rg.Count() != 1 {
-		t.Error("Failed to add rule to rulegroup")
-	}
-
-	rg.DeleteByTag("test")
-	if rg.Count() != 0 {
-		t.Error("Failed to remove rule from rulegroup")
-	}
+	t.Run("does not match different case", func(t *testing.T) {
+		rg := NewRuleGroup()
+		if err := rg.Add(newTestRule(1)); err != nil {
+			t.Fatal("Failed to add rule to rulegroup")
+		}
+		rg.DeleteByTag("TEST-TAG")
+		if rg.Count() != 1 {
+			t.Error("Expected rule to remain when tag case does not match")
+		}
+	})
 }
 
 func TestRuleGroupDeleteByMsg(t *testing.T) {
-	r := newTestRule(1)
+	t.Run("matches exact case", func(t *testing.T) {
+		rg := NewRuleGroup()
+		if err := rg.Add(newTestRule(1)); err != nil {
+			t.Fatal("Failed to add rule to rulegroup")
+		}
+		rg.DeleteByMsg("test-Msg")
+		if rg.Count() != 0 {
+			t.Error("Expected rule to be removed")
+		}
+	})
 
-	rg := NewRuleGroup()
-	if err := rg.Add(r); err != nil {
-		t.Error("Failed to add rule to rulegroup")
-	}
+	t.Run("does not match different case", func(t *testing.T) {
+		rg := NewRuleGroup()
+		if err := rg.Add(newTestRule(1)); err != nil {
+			t.Fatal("Failed to add rule to rulegroup")
+		}
+		rg.DeleteByMsg("TEST-MSG")
+		if rg.Count() != 1 {
+			t.Error("Expected rule to remain when message case does not match")
+		}
+	})
 
-	if rg.Count() != 1 {
-		t.Error("Failed to add rule to rulegroup")
-	}
-
-	rg.DeleteByMsg("test")
-	if rg.Count() != 0 {
-		t.Error("Failed to remove rule from rulegroup")
-	}
+	t.Run("keeps rules without msg", func(t *testing.T) {
+		rg := NewRuleGroup()
+		r1 := newTestRule(1)
+		r2 := NewRule()
+		r2.ID_ = 2
+		if err := rg.Add(r1); err != nil {
+			t.Fatal("Failed to add rule to rulegroup")
+		}
+		if err := rg.Add(r2); err != nil {
+			t.Fatal("Failed to add rule to rulegroup")
+		}
+		rg.DeleteByMsg("test-Msg")
+		if rg.Count() != 1 {
+			t.Error("Expected only the rule without msg to remain")
+		}
+		if rg.GetRules()[0].ID_ != 2 {
+			t.Error("Expected the rule without msg to be kept")
+		}
+	})
 }
 
 func TestRuleGroupDeleteByID(t *testing.T) {
